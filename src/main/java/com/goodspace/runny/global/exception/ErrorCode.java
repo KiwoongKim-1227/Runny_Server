@@ -69,7 +69,19 @@ public enum ErrorCode {
     // 아이템/드레스룸 (ITEM)
     ITEM_001(HttpStatus.NOT_FOUND, "ITEM_001", "존재하지 않는 아이템입니다."),
     ITEM_002(HttpStatus.BAD_REQUEST, "ITEM_002", "보유하지 않은 아이템은 착용할 수 없습니다."),
-    ITEM_003(HttpStatus.BAD_REQUEST, "ITEM_003", "아이템의 카테고리와 슬롯이 일치하지 않습니다.");
+    ITEM_003(HttpStatus.BAD_REQUEST, "ITEM_003", "아이템의 카테고리와 슬롯이 일치하지 않습니다."),
+    ITEM_004(HttpStatus.CONFLICT, "ITEM_004", "이미 보유한 아이템이 포함되어 있습니다."),
+
+    // 상점 (SHOP)
+    SHOP_001(HttpStatus.FORBIDDEN, "SHOP_001", "상점은 강아지 레벨 10 이상부터 입장할 수 있습니다."),
+    SHOP_002(HttpStatus.BAD_REQUEST, "SHOP_002", "구매할 아이템 목록이 비어 있습니다."),
+
+    // 결제 (PAYMENT)
+    PAYMENT_001(HttpStatus.BAD_REQUEST, "PAYMENT_001", "결제 금액이 주문 금액과 일치하지 않습니다."),
+    PAYMENT_002(HttpStatus.NOT_FOUND, "PAYMENT_002", "존재하지 않는 주문입니다."),
+    PAYMENT_003(HttpStatus.BAD_REQUEST, "PAYMENT_003", "결제 승인에 실패했습니다."),
+    PAYMENT_004(HttpStatus.CONFLICT, "PAYMENT_004", "이미 실패 또는 취소 처리된 주문입니다."),
+    PAYMENT_005(HttpStatus.NOT_FOUND, "PAYMENT_005", "존재하지 않는 코인 상품입니다.");
 
     private final HttpStatus status;
     private final String code;
