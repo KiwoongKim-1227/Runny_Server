@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: runny
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:3306/runny?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+  mail:
+    host: smtp.naver.com
+    port: 465
+    username: ${NAVER_MAIL_USERNAME}
+    password: ${NAVER_MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiry: 3600000
+  refresh-token-expiry: 1209600000
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    region: ap-northeast-2
+  credentials:
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+
+oauth:
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}
+  apple:
+    client-id: ${APPLE_CLIENT_ID}
+
+nicepay:
+  client-key: ${NICEPAY_CLIENT_KEY}
+  secret-key: ${NICEPAY_SECRET_KEY}
+  api-url: https://sandbox-api.nicepay.co.kr
+
+mail:
+  verification-code-expiry-minutes: 5
