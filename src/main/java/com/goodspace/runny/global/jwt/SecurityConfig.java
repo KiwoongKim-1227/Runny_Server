@@ -31,7 +31,11 @@ public class SecurityConfig {
     // 인증 없이 접근 가능한 경로 (온보딩/인증 관련)
     private static final String[] WHITELIST = {
             "/api/auth/**",
-            "/api/health"
+            "/api/health",
+            // Swagger UI / OpenAPI 문서 (운영 배포 시 차단 또는 인증 적용 권장)
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/v3/api-docs/**"
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
