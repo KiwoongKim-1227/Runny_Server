@@ -35,6 +35,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
         if (token != null) {
             try {
+                if (!jwtProvider.isAccessToken(token)) {
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
                 Long userId = jwtProvider.parseUserId(token);
                 // principal에 userId(Long)를 담아 컨트롤러/서비스에서 SecurityUtil로 조회
                 UsernamePasswordAuthenticationToken authentication =

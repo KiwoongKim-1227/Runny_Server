@@ -2,6 +2,7 @@ package com.goodspace.runny.domain.user.service;
 
 import com.goodspace.runny.domain.auth.service.PasswordValidator;
 import com.goodspace.runny.domain.auth.service.TokenService;
+import com.goodspace.runny.domain.friend.service.FriendService;
 import com.goodspace.runny.domain.user.dto.UserDto;
 import com.goodspace.runny.domain.user.entity.User;
 import com.goodspace.runny.domain.user.repository.UserRepository;
@@ -29,6 +30,7 @@ public class UserService {
     private final ProfanityFilter profanityFilter;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final FriendService friendService;
 
     /** 닉네임 사용 가능 여부 - 규칙/비속어 위반은 예외, 중복이면 false */
     @Transactional(readOnly = true)
@@ -88,9 +90,10 @@ public class UserService {
         User user = findUser(userId);
         user.withdraw();
         tokenService.deleteRefreshToken(userId);
-        // TODO(이후 단계 훅): 친구 관계/놀이터 초대/크루 가입 신청 등 상호작용 데이터 삭제 연결
-        // TODO(이후 단계 훅): 크루장인 경우 위임/해체 정책 검증 (4.A - 크루원 있으면 위임 필요)
-        // TODO(이후 단계 훅): S3 route/ 프리픽스 이미지 일괄 삭제 (트랜잭션 커밋 후 수행)
+        // 상호작용 데이터 삭제: 친구 관계/요청 + 놀이터 초대 (6단계 연결 완료)
+        friendService.deleteAllInteractionsOf(userId);
+        // TODO(이후 단계 훅): 크루 가입 신청 삭제, 크루장인 경우 위임/해체 정책 검증 (7단계)
+        // TODO(이후 단계 훅): S3 route/ 프리픽스 이미지 일괄 삭제 (9단계, 트랜잭션 커밋 후 수행)
     }
 
     /** 유저 조회 공통 (탈퇴 유저는 @SQLRestriction으로 자동 제외) */

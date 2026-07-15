@@ -81,7 +81,16 @@ public enum ErrorCode {
     PAYMENT_002(HttpStatus.NOT_FOUND, "PAYMENT_002", "존재하지 않는 주문입니다."),
     PAYMENT_003(HttpStatus.BAD_REQUEST, "PAYMENT_003", "결제 승인에 실패했습니다."),
     PAYMENT_004(HttpStatus.CONFLICT, "PAYMENT_004", "이미 실패 또는 취소 처리된 주문입니다."),
-    PAYMENT_005(HttpStatus.NOT_FOUND, "PAYMENT_005", "존재하지 않는 코인 상품입니다.");
+    PAYMENT_005(HttpStatus.NOT_FOUND, "PAYMENT_005", "존재하지 않는 코인 상품입니다."),
+
+    // 친구/놀이터 (FRIEND)
+    FRIEND_001(HttpStatus.BAD_REQUEST, "FRIEND_001", "자기 자신에게 친구 요청을 보낼 수 없습니다."),
+    FRIEND_002(HttpStatus.CONFLICT, "FRIEND_002", "이미 요청이 존재합니다."),
+    FRIEND_003(HttpStatus.CONFLICT, "FRIEND_003", "이미 친구인 유저입니다."),
+    FRIEND_004(HttpStatus.BAD_REQUEST, "FRIEND_004", "친구가 아닌 유저입니다."),
+    FRIEND_005(HttpStatus.BAD_REQUEST, "FRIEND_005", "놀이터 초대는 최대 4명까지 가능합니다."),
+    FRIEND_006(HttpStatus.NOT_FOUND, "FRIEND_006", "존재하지 않는 친구 요청입니다."),
+    FRIEND_007(HttpStatus.CONFLICT, "FRIEND_007", "이미 처리된 요청입니다.");
 
     private final HttpStatus status;
     private final String code;
