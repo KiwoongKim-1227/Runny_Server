@@ -15,11 +15,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
  * 결제 오케스트레이션 서비스. 주문 생성과 승인 검증 흐름을 담당한다.
- * 승인 흐름: NicePay 호출(트랜잭션 밖) -> 금액 일치 검증 -> 상태 전이 + 코인 지급(트랜잭션).
+ * 승인 흐름: NicePay 호출(트랜잭션 밖) -> 주문번호/금액 일치 검증 -> 상태 전이 + 코인 지급(트랜잭션).
  * 동일 orderId 재승인은 status 확인으로 멱등 처리한다(COMPLETED면 기존 결과 반환).
  */
 @Slf4j
@@ -51,7 +52,7 @@ public class PaymentService {
     }
 
     /**
-     * 승인 검증 - tid/orderId 수신 후 NicePay 승인 API 호출, 응답 금액과 주문 금액 일치 검증.
+     * 승인 검증 - tid/orderId 수신 후 NicePay 승인 API 호출, 응답 주문번호/금액과 서버 주문 일치 검증.
      * 성공: COMPLETED + 코인 지급. 실패/불일치: 취소 API 호출 후 FAILED.
      */
     public PaymentDto.ApproveResponse approve(Long userId, PaymentDto.ApproveRequest request) {
@@ -76,6 +77,13 @@ public class PaymentService {
             paymentTransactionService.fail(request.orderId(), request.tid());
             throw new BusinessException(ErrorCode.PAYMENT_003);
         }
+        if (!Objects.equals(result.orderId(), payment.getOrderId())) {
+            log.warn("NicePay 주문번호 불일치: requestOrderId={}, responseOrderId={}",
+                    request.orderId(), result.orderId());
+            nicePayClient.cancel(request.tid(), request.orderId(), "주문번호 불일치 취소");
+            paymentTransactionService.fail(request.orderId(), request.tid());
+            throw new BusinessException(ErrorCode.PAYMENT_001);
+        }
         if (result.amount() != payment.getAmount()) {
             log.warn("NicePay 금액 불일치: orderId={}, 주문={}, 응답={}",
                     request.orderId(), payment.getAmount(), result.amount());
@@ -84,11 +92,15 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.PAYMENT_001);
         }
 
-        // 상태 전이 + 코인 지급. 동시 요청으로 전이에 실패했다면 처리된 최신 상태를 반환(멱등)
-        paymentTransactionService.complete(request.orderId(), request.tid());
-        Payment completed = paymentRepository.findByOrderId(request.orderId())
+        // 상태 전이 + 코인 지급. 동시 요청으로 이미 완료된 경우만 멱등 반환하고,
+        // 실패/취소로 선점된 주문은 성공 응답처럼 보이지 않도록 차단한다.
+        boolean completedByThisRequest = paymentTransactionService.complete(request.orderId(), request.tid());
+        Payment latest = paymentRepository.findByOrderId(request.orderId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_002));
-        return PaymentDto.ApproveResponse.of(completed, completed.getCoinProduct().getCoinAmount());
+        if (!completedByThisRequest && latest.getStatus() != PaymentStatus.COMPLETED) {
+            throw new BusinessException(ErrorCode.PAYMENT_004);
+        }
+        return PaymentDto.ApproveResponse.of(latest, latest.getCoinProduct().getCoinAmount());
     }
 
     // TODO(MVP 범위 외 확장 지점): NicePay Webhook 수신으로 클라이언트 미도달 승인 건 동기화

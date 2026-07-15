@@ -2,6 +2,7 @@ package com.goodspace.runny.domain.user.service;
 
 import com.goodspace.runny.domain.auth.service.PasswordValidator;
 import com.goodspace.runny.domain.auth.service.TokenService;
+import com.goodspace.runny.domain.crew.service.CrewService;
 import com.goodspace.runny.domain.friend.service.FriendService;
 import com.goodspace.runny.domain.user.dto.UserDto;
 import com.goodspace.runny.domain.user.entity.User;
@@ -31,6 +32,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final FriendService friendService;
+    private final CrewService crewService;
 
     /** 닉네임 사용 가능 여부 - 규칙/비속어 위반은 예외, 중복이면 false */
     @Transactional(readOnly = true)
@@ -92,7 +94,8 @@ public class UserService {
         tokenService.deleteRefreshToken(userId);
         // 상호작용 데이터 삭제: 친구 관계/요청 + 놀이터 초대 (6단계 연결 완료)
         friendService.deleteAllInteractionsOf(userId);
-        // TODO(이후 단계 훅): 크루 가입 신청 삭제, 크루장인 경우 위임/해체 정책 검증 (7단계)
+        // 크루 처리: 크루장+크루원 존재 시 위임 필요 에러, 크루장 혼자면 해체, 일반 크루원은 멤버십/신청 삭제 (7단계 연결 완료)
+        crewService.handleUserWithdrawal(userId);
         // TODO(이후 단계 훅): S3 route/ 프리픽스 이미지 일괄 삭제 (9단계, 트랜잭션 커밋 후 수행)
     }
 
