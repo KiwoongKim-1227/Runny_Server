@@ -64,7 +64,12 @@ public enum ErrorCode {
     DOG_006(HttpStatus.BAD_REQUEST, "DOG_006", "온보딩에서는 일반 견종만 선택할 수 있습니다."),
     DOG_007(HttpStatus.NOT_FOUND, "DOG_007", "보유하지 않은 강아지입니다."),
     DOG_008(HttpStatus.BAD_REQUEST, "DOG_008", "프로필 입력을 먼저 완료해야 합니다."),
-    DOG_009(HttpStatus.NOT_FOUND, "DOG_009", "활성 강아지가 없습니다.");
+    DOG_009(HttpStatus.NOT_FOUND, "DOG_009", "활성 강아지가 없습니다."),
+
+    // 아이템/드레스룸 (ITEM)
+    ITEM_001(HttpStatus.NOT_FOUND, "ITEM_001", "존재하지 않는 아이템입니다."),
+    ITEM_002(HttpStatus.BAD_REQUEST, "ITEM_002", "보유하지 않은 아이템은 착용할 수 없습니다."),
+    ITEM_003(HttpStatus.BAD_REQUEST, "ITEM_003", "아이템의 카테고리와 슬롯이 일치하지 않습니다.");
 
     private final HttpStatus status;
     private final String code;

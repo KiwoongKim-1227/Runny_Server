@@ -133,6 +133,12 @@ public class DogService {
         return activeDogId != null && dogChangeLogService.hasUnseenChanges(activeDogId);
     }
 
+    /** 활성 강아지 조회 - 드레스룸/상점 등 다른 도메인에서 재사용하는 공개 메서드 */
+    @Transactional(readOnly = true)
+    public UserDog getActiveDog(Long userId) {
+        return findActiveDog(userId);
+    }
+
     /** 활성 강아지 조회 공통 */
     private UserDog findActiveDog(Long userId) {
         Long activeDogId = findUser(userId).getActiveDogId();
