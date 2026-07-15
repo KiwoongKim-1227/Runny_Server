@@ -90,7 +90,23 @@ public enum ErrorCode {
     FRIEND_004(HttpStatus.BAD_REQUEST, "FRIEND_004", "친구가 아닌 유저입니다."),
     FRIEND_005(HttpStatus.BAD_REQUEST, "FRIEND_005", "놀이터 초대는 최대 4명까지 가능합니다."),
     FRIEND_006(HttpStatus.NOT_FOUND, "FRIEND_006", "존재하지 않는 친구 요청입니다."),
-    FRIEND_007(HttpStatus.CONFLICT, "FRIEND_007", "이미 처리된 요청입니다.");
+    FRIEND_007(HttpStatus.CONFLICT, "FRIEND_007", "이미 처리된 요청입니다."),
+
+    // 크루 (CREW)
+    CREW_001(HttpStatus.CONFLICT, "CREW_001", "이미 사용 중인 크루명입니다."),
+    CREW_002(HttpStatus.BAD_REQUEST, "CREW_002", "크루명 규칙을 충족하지 않습니다. (1~8자)"),
+    CREW_003(HttpStatus.BAD_REQUEST, "CREW_003", "크루명에 사용할 수 없는 단어가 포함되어 있습니다."),
+    CREW_004(HttpStatus.BAD_REQUEST, "CREW_004", "한줄소개는 30자를 초과할 수 없습니다."),
+    CREW_005(HttpStatus.CONFLICT, "CREW_005", "이미 크루에 소속되어 있습니다."),
+    CREW_006(HttpStatus.NOT_FOUND, "CREW_006", "존재하지 않는 크루입니다."),
+    CREW_007(HttpStatus.CONFLICT, "CREW_007", "이미 가입 신청한 크루입니다."),
+    CREW_008(HttpStatus.BAD_REQUEST, "CREW_008", "크루 정원이 가득 찼습니다."),
+    CREW_009(HttpStatus.FORBIDDEN, "CREW_009", "크루장만 사용할 수 있는 기능입니다."),
+    CREW_010(HttpStatus.BAD_REQUEST, "CREW_010", "크루장은 위임 또는 해체 후 탈퇴할 수 있습니다."),
+    CREW_011(HttpStatus.BAD_REQUEST, "CREW_011", "소속된 크루가 없습니다."),
+    CREW_012(HttpStatus.NOT_FOUND, "CREW_012", "존재하지 않는 가입 신청입니다."),
+    CREW_013(HttpStatus.BAD_REQUEST, "CREW_013", "자기 자신에게는 수행할 수 없는 작업입니다."),
+    CREW_014(HttpStatus.BAD_REQUEST, "CREW_014", "해당 유저는 크루원이 아닙니다.");
 
     private final HttpStatus status;
     private final String code;
