@@ -117,7 +117,12 @@ public enum ErrorCode {
     // 업적 (ACHIEVEMENT)
     ACHIEVEMENT_001(HttpStatus.BAD_REQUEST, "ACHIEVEMENT_001", "아직 달성하지 않은 업적입니다."),
     ACHIEVEMENT_002(HttpStatus.CONFLICT, "ACHIEVEMENT_002", "이미 보상을 수령한 업적입니다."),
-    ACHIEVEMENT_003(HttpStatus.NOT_FOUND, "ACHIEVEMENT_003", "존재하지 않는 업적입니다.");
+    ACHIEVEMENT_003(HttpStatus.NOT_FOUND, "ACHIEVEMENT_003", "존재하지 않는 업적입니다."),
+
+    // 러닝 (RUNNING)
+    RUNNING_001(HttpStatus.BAD_REQUEST, "RUNNING_001", "러닝 데이터가 올바르지 않습니다. (음수/비정상 페이스)"),
+    RUNNING_002(HttpStatus.BAD_REQUEST, "RUNNING_002", "미래 시각의 러닝 기록은 저장할 수 없습니다."),
+    RUNNING_003(HttpStatus.NOT_FOUND, "RUNNING_003", "존재하지 않는 러닝 기록입니다.");
 
     private final HttpStatus status;
     private final String code;

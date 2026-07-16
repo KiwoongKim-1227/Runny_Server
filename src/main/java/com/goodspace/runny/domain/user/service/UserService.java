@@ -10,6 +10,9 @@ import com.goodspace.runny.domain.user.repository.UserRepository;
 import com.goodspace.runny.global.exception.BusinessException;
 import com.goodspace.runny.global.exception.ErrorCode;
 import com.goodspace.runny.global.util.ProfanityFilter;
+import com.goodspace.runny.global.util.S3Uploader;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ public class UserService {
     private final TokenService tokenService;
     private final FriendService friendService;
     private final CrewService crewService;
+    private final S3Uploader s3Uploader;
 
     /** 닉네임 사용 가능 여부 - 규칙/비속어 위반은 예외, 중복이면 false */
     @Transactional(readOnly = true)
@@ -96,7 +100,13 @@ public class UserService {
         friendService.deleteAllInteractionsOf(userId);
         // 크루 처리: 크루장+크루원 존재 시 위임 필요 에러, 크루장 혼자면 해체, 일반 크루원은 멤버십/신청 삭제 (7단계 연결 완료)
         crewService.handleUserWithdrawal(userId);
-        // TODO(이후 단계 훅): S3 route/ 프리픽스 이미지 일괄 삭제 (9단계, 트랜잭션 커밋 후 수행)
+        // S3 route/{userId}/ 이미지 일괄 삭제 - 커밋 후 수행, 실패해도 흐름 계속 (9단계 연결 완료, 문서 8.4)
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                s3Uploader.deleteAll("route/" + userId + "/");
+            }
+        });
     }
 
     /** 유저 조회 공통 (탈퇴 유저는 @SQLRestriction으로 자동 제외) */
