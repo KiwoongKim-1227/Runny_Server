@@ -68,4 +68,9 @@ public class DogBreed {
     public boolean requiresAchievementUnlock() {
         return this.unlockAchievementCode != null;
     }
+
+    /** 업적 마스터 FK 백필 - 8단계 업적 시드 등록 후 코드 매칭으로 연결 */
+    public void linkUnlockAchievement(Long achievementId) {
+        this.unlockAchievementId = achievementId;
+    }
 }

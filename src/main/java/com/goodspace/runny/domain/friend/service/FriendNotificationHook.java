@@ -1,23 +1,34 @@
 package com.goodspace.runny.domain.friend.service;
 
-import lombok.extern.slf4j.Slf4j;
+import com.goodspace.runny.domain.achievement.service.AchievementService;
+import com.goodspace.runny.domain.notification.service.NotificationService;
+import com.goodspace.runny.domain.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 친구 이벤트 알림 훅. 알림 도메인은 8단계 구현이므로 지금은 이벤트 지점만 정의해 두고,
- * 8단계에서 user_setting(알림 on/off) 확인 + notification 레코드 생성 로직으로 교체한다.
+ * 친구 이벤트 훅 (8단계 실제 구현 연결 완료).
+ * 요청 수신: 설정 on인 수신자에게 FRIEND_REQUEST 알림 생성.
+ * 수락: 친구 사귀기 업적 판정(양쪽 모두).
  */
-@Slf4j
 @Component
+@RequiredArgsConstructor
 public class FriendNotificationHook {
 
-    /** 친구 요청 수신 알림 지점 - TODO(8단계): 설정 on인 수신자에게 FRIEND_REQUEST 알림 생성 */
+    private final NotificationService notificationService;
+    private final AchievementService achievementService;
+    private final UserRepository userRepository;
+
+    /** 친구 요청 수신 - 알림 설정 on인 경우만 생성 (판정은 NotificationService 내부) */
     public void onFriendRequestReceived(Long receiverId, Long requesterId) {
-        log.debug("친구 요청 알림 훅: receiver={}, requester={}", receiverId, requesterId);
+        String requesterNickname = userRepository.findById(requesterId)
+                .map(user -> user.getNickname())
+                .orElse(null);
+        notificationService.notifyFriendRequest(receiverId, requesterId, requesterNickname);
     }
 
-    /** 친구 수락 지점 - TODO(8단계): 업적(친구 사귀기) 판정 연결 */
+    /** 친구 수락 - 친구 사귀기 업적 판정 (요청자/수신자 양쪽 모두) */
     public void onFriendAccepted(Long requesterId, Long receiverId) {
-        log.debug("친구 수락 훅: requester={}, receiver={}", requesterId, receiverId);
+        achievementService.onFriendAccepted(requesterId, receiverId);
     }
 }
