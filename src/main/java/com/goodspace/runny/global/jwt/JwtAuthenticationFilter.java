@@ -35,6 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
         if (token != null) {
             try {
+                // refresh 토큰으로 보호 API에 접근하는 오용 차단 - access 타입만 인증 인정
                 if (!jwtProvider.isAccessToken(token)) {
                     SecurityContextHolder.clearContext();
                     filterChain.doFilter(request, response);

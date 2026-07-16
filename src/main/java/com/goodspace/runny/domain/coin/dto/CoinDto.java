@@ -34,13 +34,9 @@ public final class CoinDto {
         }
     }
 
-    /** 코인 내역 페이징 응답 */
+    /** 코인 내역 응답 - 전체 반환 (MVP 규모에서 페이징 제거) */
     public record TransactionsResponse(
-            List<TransactionItem> content,
-            int page,
-            int size,
-            long totalElements,
-            boolean hasNext
+            List<TransactionItem> content
     ) {
     }
 }

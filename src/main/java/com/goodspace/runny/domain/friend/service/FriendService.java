@@ -15,8 +15,6 @@ import com.goodspace.runny.global.exception.BusinessException;
 import com.goodspace.runny.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,14 +36,13 @@ public class FriendService {
     private final UserSummaryService userSummaryService;
     private final FriendNotificationHook friendNotificationHook;
 
-    /** 친구 검색 - 닉네임 부분 일치 + 페이징, 각 결과에 나와의 관계 상태 포함 */
+    /** 친구 검색 - 닉네임 부분 일치, 전체 반환(MVP 규모 페이징 제거). 각 결과에 나와의 관계 상태 포함 */
     @Transactional(readOnly = true)
-    public FriendDto.SearchResponse search(Long userId, String nickname, int page, int size) {
-        Page<User> users = userRepository.findByNicknameContainingAndIdNot(
-                nickname, userId, PageRequest.of(page, size));
+    public FriendDto.SearchResponse search(Long userId, String nickname) {
+        List<User> users = userRepository.findByNicknameContainingAndIdNotOrderByIdAsc(nickname, userId);
 
         Map<Long, RelationStatus> relationByUserId = relationMap(userId);
-        List<Long> resultUserIds = users.getContent().stream().map(User::getId).toList();
+        List<Long> resultUserIds = users.stream().map(User::getId).toList();
         Map<Long, UserSummary> summaries = userSummaryService.summarizeAll(resultUserIds);
 
         List<FriendDto.SearchItem> content = resultUserIds.stream()
@@ -53,8 +50,7 @@ public class FriendService {
                         summaries.get(id),
                         relationByUserId.getOrDefault(id, RelationStatus.NONE)))
                 .toList();
-        return new FriendDto.SearchResponse(content, users.getNumber(), users.getSize(),
-                users.getTotalElements(), users.hasNext());
+        return new FriendDto.SearchResponse(content);
     }
 
     /** 친구 요청 보내기 - 자기 자신/중복/이미 친구 검증. 동시 요청은 UNIQUE 제약 위반을 비즈니스 예외로 변환 */

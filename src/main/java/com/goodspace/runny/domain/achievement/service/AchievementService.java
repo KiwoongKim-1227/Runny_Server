@@ -16,6 +16,8 @@ import com.goodspace.runny.domain.user.repository.UserRepository;
 import com.goodspace.runny.global.exception.BusinessException;
 import com.goodspace.runny.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ import java.util.Map;
  * 업적 서비스. 러닝 완료 데이터와 친구 수락 이벤트로 달성을 판정하고(달성 기록만),
  * 보상은 수령 버튼(claim API)으로 지급한다. 여성은 견종 업적 페이스 기준 +1분(60초) 보정.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AchievementService {
@@ -116,18 +119,21 @@ public class AchievementService {
         achieve(receiverId, AchievementSeeder.MAKE_FRIEND, new ArrayList<>());
     }
 
-    /** 업적 보상 수령 - 코인은 CoinService.add, 견종 해금은 claimed 처리 자체가 해금(AchievementUnlockChecker 판정 기준) */
+    /**
+     * 업적 보상 수령 - 조건부 UPDATE(claimed=false -> true)로 수령을 선점한 요청만 보상을 지급한다.
+     * 코인은 CoinService.add, 견종 해금은 claimed 처리 자체가 해금(AchievementUnlockChecker 판정 기준).
+     */
     @Transactional
     public AchievementDto.ClaimResponse claim(Long userId, Long achievementId) {
         Achievement achievement = achievementRepository.findById(achievementId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ACHIEVEMENT_003));
-        UserAchievement userAchievement = userAchievementRepository
-                .findByUserIdAndAchievementId(userId, achievementId)
+        userAchievementRepository.findByUserIdAndAchievementId(userId, achievementId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ACHIEVEMENT_001));
-        if (userAchievement.isClaimed()) {
+
+        // 수령 선점 - 이미 수령됐거나 동시 요청에 밀리면 영향 행 0 (중복 지급 원천 차단)
+        if (userAchievementRepository.claimIfNotClaimed(userId, achievementId) == 0) {
             throw new BusinessException(ErrorCode.ACHIEVEMENT_002);
         }
-        userAchievement.claim();
 
         // 코인성 보상은 dog_change_log 기록 없음 (경험치 아님, 문서 4.F)
         if (achievement.getRewardType() == RewardType.COIN && achievement.getRewardCoin() > 0) {
@@ -153,14 +159,22 @@ public class AchievementService {
         return new AchievementDto.ListResponse(items, achievedCount, all.size(), rate);
     }
 
-    /** 달성 처리 공통 - 1회성이므로 이미 달성했으면 무시. 새로 달성한 경우 응답 목록에 추가 */
+    /**
+     * 달성 처리 공통 - 1회성이므로 이미 달성했으면 무시. 동시 달성 판정 경쟁은
+     * (user, achievement) UNIQUE 위반을 잡아 조용히 무시한다 (먼저 기록한 요청이 유효).
+     */
     private void achieve(Long userId, String code, List<AchievementDto.AchievedItem> achieved) {
         Achievement achievement = achievementRepository.findByCode(code)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ACHIEVEMENT_003));
         if (userAchievementRepository.existsByUserIdAndAchievementId(userId, achievement.getId())) {
             return;
         }
-        userAchievementRepository.save(new UserAchievement(userId, achievement));
+        try {
+            userAchievementRepository.saveAndFlush(new UserAchievement(userId, achievement));
+        } catch (DataIntegrityViolationException e) {
+            log.debug("업적 동시 달성 경쟁 - 기존 기록 유지: user={}, code={}", userId, code);
+            return;
+        }
         achieved.add(new AchievementDto.AchievedItem(
                 achievement.getId(), achievement.getCode(), achievement.getTitle(), achievement.getImageUrl()));
     }

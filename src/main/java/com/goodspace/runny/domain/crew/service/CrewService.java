@@ -15,8 +15,6 @@ import com.goodspace.runny.global.exception.BusinessException;
 import com.goodspace.runny.global.exception.ErrorCode;
 import com.goodspace.runny.global.util.S3Uploader;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -60,19 +58,27 @@ public class CrewService {
         crewValidator.validateName(name);
         crewValidator.validateIntro(intro);
 
+        // S3 업로드는 트랜잭션 보호를 받지 못하므로, 업로드 후 DB 저장 실패 시 새 객체를 보상 삭제한다 (고아 객체 방지)
         String imageUrl = (image == null || image.isEmpty()) ? null : s3Uploader.upload(image, IMAGE_PREFIX);
-        Crew crew = crewRepository.save(new Crew(name, imageUrl, intro, userId));
-        crewMemberRepository.save(new CrewMember(crew.getId(), userId, CrewRole.LEADER));
-        // 크루 소속이 되었으므로 다른 크루에 보낸 대기 중 신청은 정리
-        crewJoinRequestRepository.deleteAllByUserId(userId);
-        return crew.getId();
+        try {
+            Crew crew = crewRepository.save(new Crew(name, imageUrl, intro, userId));
+            crewMemberRepository.save(new CrewMember(crew.getId(), userId, CrewRole.LEADER));
+            // 크루 소속이 되었으므로 다른 크루에 보낸 대기 중 신청은 정리
+            crewJoinRequestRepository.deleteAllByUserId(userId);
+            return crew.getId();
+        } catch (RuntimeException e) {
+            if (imageUrl != null) {
+                s3Uploader.delete(imageUrl);
+            }
+            throw e;
+        }
     }
 
-    /** 크루 검색 - 부분 일치 + 페이징. memberCount와 myRequestStatus(NONE/PENDING) 포함 */
+    /** 크루 검색 - 부분 일치, 전체 반환(MVP 규모 페이징 제거). memberCount와 myRequestStatus(NONE/PENDING) 포함 */
     @Transactional(readOnly = true)
-    public CrewDto.SearchResponse search(Long userId, String name, int page, int size) {
-        Page<Crew> crews = crewRepository.findByNameContaining(name, PageRequest.of(page, size));
-        List<Long> crewIds = crews.getContent().stream().map(Crew::getId).toList();
+    public CrewDto.SearchResponse search(Long userId, String name) {
+        List<Crew> crews = crewRepository.findByNameContainingOrderByIdAsc(name);
+        List<Long> crewIds = crews.stream().map(Crew::getId).toList();
 
         // 현재 인원 일괄 집계 + 내 대기 중 신청 크루 목록
         Map<Long, Integer> memberCounts = new HashMap<>();
@@ -82,14 +88,13 @@ public class CrewService {
         }
         List<Long> myPendingCrewIds = crewJoinRequestRepository.findPendingCrewIdsOf(userId);
 
-        List<CrewDto.SearchItem> content = crews.getContent().stream()
+        List<CrewDto.SearchItem> content = crews.stream()
                 .map(crew -> new CrewDto.SearchItem(
                         crew.getId(), crew.getName(), crew.displayImageUrl(), crew.getIntro(),
                         memberCounts.getOrDefault(crew.getId(), 0), crew.getMaxMembers(),
                         myPendingCrewIds.contains(crew.getId()) ? "PENDING" : "NONE"))
                 .toList();
-        return new CrewDto.SearchResponse(content, crews.getNumber(), crews.getSize(),
-                crews.getTotalElements(), crews.hasNext());
+        return new CrewDto.SearchResponse(content);
     }
 
     /** 크루 상세 - 이미지/이름/한줄소개/총 누적 거리/멤버 수(현재·최대)/이번 주 top3/크루원 목록 */
@@ -136,13 +141,13 @@ public class CrewService {
                 .orElse(CrewDto.MyCrewResponse.none());
     }
 
-    /** 가입 신청 - 1인 1크루, 중복 신청 불가, 정원 초과 크루는 신청 불가 */
+    /** 가입 신청 - 1인 1크루, 중복 신청 불가, 정원 초과 크루는 신청 불가. 정원 검증은 크루 행 락으로 직렬화 */
     @Transactional
     public void requestJoin(Long userId, Long crewId) {
         if (crewMemberRepository.existsByUserId(userId)) {
             throw new BusinessException(ErrorCode.CREW_005);
         }
-        Crew crew = findCrew(crewId);
+        Crew crew = findCrewForUpdate(crewId);
         if (crewJoinRequestRepository.existsByCrewIdAndUserIdAndStatus(crewId, userId, JoinRequestStatus.PENDING)) {
             throw new BusinessException(ErrorCode.CREW_007);
         }
@@ -193,6 +198,12 @@ public class CrewService {
             }
         });
         crewJoinRequestRepository.deleteAllByUserId(userId);
+    }
+
+    /** 크루 조회 (비관적 쓰기 락) - 정원 검증/변경 흐름에서 사용. 동시 승인/신청 간 정원 초과 방지 */
+    Crew findCrewForUpdate(Long crewId) {
+        return crewRepository.findByIdForUpdate(crewId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CREW_006));
     }
 
     /** 크루 조회 공통 */

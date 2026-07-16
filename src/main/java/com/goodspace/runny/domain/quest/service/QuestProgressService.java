@@ -7,15 +7,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 퀘스트 진행도 갱신 공용 서비스. 러닝 완료(9단계에서 호출)와 히스토리 꾸미기 이벤트를 받아
+ * 퀘스트 진행도 갱신 공용 서비스. 러닝 완료(러닝 도메인에서 호출)와 히스토리 꾸미기 이벤트를 받아
  * 현재 기간(오늘/이번 주)의 해당 조건 퀘스트들을 갱신한다.
- * 퀘스트가 아직 lazy 생성되지 않은 기간이면 갱신 대상이 없어 자연스럽게 무시된다.
+ * 갱신 전 QuestAssignmentService로 오늘/이번 주 퀘스트를 먼저 출제해,
+ * 퀘스트 화면을 열지 않고 러닝한 경우에도 진행도가 유실되지 않는다.
  */
 @Service
 @RequiredArgsConstructor
 public class QuestProgressService {
 
     private final UserQuestRepository userQuestRepository;
+    private final QuestAssignmentService questAssignmentService;
 
     /** 러닝 완료 이벤트 - 러닝 도메인(9단계)에서 호출할 공개 메서드 */
     public record RunningEvent(
@@ -33,6 +35,9 @@ public class QuestProgressService {
     public void onRunningCompleted(Long userId, RunningEvent event) {
         String todayKey = QuestPeriod.todayKey();
         String weekKey = QuestPeriod.weekKey();
+        // 미출제 기간이면 먼저 출제해 진행도 유실 방지
+        questAssignmentService.ensureDailyQuests(userId, todayKey);
+        questAssignmentService.ensureWeeklyQuests(userId, weekKey);
 
         // 1회 러닝 거리 (1km 달리기 / 랜덤 3~6km)
         updateMax(userId, todayKey, QuestConditionType.DISTANCE, event.distanceKm());
@@ -50,7 +55,9 @@ public class QuestProgressService {
     /** 히스토리 꾸미기 완료 이벤트 - 랜덤 퀘스트(DECORATE) 진행도 */
     @Transactional
     public void onDecorated(Long userId) {
-        addProgress(userId, QuestPeriod.todayKey(), QuestConditionType.DECORATE, 1);
+        String todayKey = QuestPeriod.todayKey();
+        questAssignmentService.ensureDailyQuests(userId, todayKey);
+        addProgress(userId, todayKey, QuestConditionType.DECORATE, 1);
     }
 
     /** 최대치 갱신 방식 */

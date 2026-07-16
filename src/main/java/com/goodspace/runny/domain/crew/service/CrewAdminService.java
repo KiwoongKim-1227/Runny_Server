@@ -66,7 +66,8 @@ public class CrewAdminService {
     /** 일괄 승인 - 건별 정원 재검증, 초과분은 실패 처리 후 결과 반환. 승인 성공 건은 알림 훅 호출 */
     @Transactional
     public CrewDto.BatchResult approveAll(Long crewId, Long leaderId, List<Long> requestIds) {
-        Crew crew = validateLeader(crewId, leaderId);
+        // 정원 재검증이 있으므로 크루 행 락으로 동시 승인/신청과 직렬화
+        Crew crew = validateLeaderForUpdate(crewId, leaderId);
         List<Long> succeeded = new ArrayList<>();
         List<CrewDto.BatchResult.FailedItem> failed = new ArrayList<>();
 
@@ -137,10 +138,18 @@ public class CrewAdminService {
         deleteImageAfterCommit(imageUrl);
     }
 
-    /** 크루명 변경 - 1,000코인 차감 + 8자/중복/비속어 재검증 */
+    /**
+     * 크루명 변경 - 1,000코인 차감 + 8자/중복/비속어 재검증.
+     * 검증 순서: 형식/비속어 -> 현재와 동일명이면 차감 없이 조기 반환 -> 중복 -> 코인 차감 -> 변경.
+     * 모든 검증을 차감보다 앞에 두어 검증 실패 시 코인이 차감되지 않게 한다 (같은 트랜잭션이지만 순서로 의도를 명확화).
+     */
     @Transactional
     public void changeName(Long crewId, Long leaderId, String newName) {
         Crew crew = validateLeader(crewId, leaderId);
+        crewValidator.validateNameFormat(newName);
+        if (newName.equals(crew.getName())) {
+            return;
+        }
         crewValidator.validateName(newName);
         coinService.deduct(leaderId, NAME_CHANGE_COST, CoinTransactionType.CREW_SPEND, crewId);
         crew.changeName(newName);
@@ -157,7 +166,7 @@ public class CrewAdminService {
     /** 정원 확장 - 1,000코인당 +50 */
     @Transactional
     public int expandCapacity(Long crewId, Long leaderId) {
-        Crew crew = validateLeader(crewId, leaderId);
+        Crew crew = validateLeaderForUpdate(crewId, leaderId);
         coinService.deduct(leaderId, CAPACITY_EXPAND_COST, CoinTransactionType.CREW_SPEND, crewId);
         crew.expandCapacity();
         return crew.getMaxMembers();
@@ -168,8 +177,15 @@ public class CrewAdminService {
     public String changeImage(Long crewId, Long leaderId, MultipartFile image) {
         Crew crew = validateLeader(crewId, leaderId);
         String oldImageUrl = crew.getImageUrl();
+        // 업로드 성공 후 DB 반영 실패 시 새 객체를 보상 삭제해 고아 객체를 남기지 않는다
         String newImageUrl = s3Uploader.upload(image, CrewService.IMAGE_PREFIX);
-        crew.changeImage(newImageUrl);
+        try {
+            crew.changeImage(newImageUrl);
+            crewRepository.flush();
+        } catch (RuntimeException e) {
+            s3Uploader.delete(newImageUrl);
+            throw e;
+        }
         deleteImageAfterCommit(oldImageUrl);
         return newImageUrl;
     }
@@ -193,7 +209,16 @@ public class CrewAdminService {
 
     /** 크루장 권한 검증 공통 메서드 - 크루 존재 + leader_id 일치 확인 */
     private Crew validateLeader(Long crewId, Long userId) {
-        Crew crew = crewService.findCrew(crewId);
+        return assertLeader(crewService.findCrew(crewId), userId);
+    }
+
+    /** 크루장 권한 검증 (비관적 락) - 정원 검증이 있는 흐름(일괄 승인/정원 확장)용 */
+    private Crew validateLeaderForUpdate(Long crewId, Long userId) {
+        return assertLeader(crewService.findCrewForUpdate(crewId), userId);
+    }
+
+    /** leader_id 일치 검증 공통 */
+    private Crew assertLeader(Crew crew, Long userId) {
         if (!crew.getLeaderId().equals(userId)) {
             throw new BusinessException(ErrorCode.CREW_009);
         }

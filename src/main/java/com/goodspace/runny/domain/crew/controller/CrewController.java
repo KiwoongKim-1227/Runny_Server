@@ -39,14 +39,11 @@ public class CrewController {
 
     /** 크루 검색 */
     @Operation(summary = "크루 검색",
-            description = "크루명 부분 일치 + 페이징. memberCount와 myRequestStatus(NONE/PENDING)로 "
+            description = "크루명 부분 일치, 전체 반환. memberCount와 myRequestStatus(NONE/PENDING)로 "
                     + "가입 신청 버튼 vs 승인대기 표시 분기")
     @GetMapping("/search")
-    public ApiResponse<CrewDto.SearchResponse> search(
-            @RequestParam String name,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return ApiResponse.ok(crewService.search(SecurityUtil.currentUserId(), name, page, size));
+    public ApiResponse<CrewDto.SearchResponse> search(@RequestParam String name) {
+        return ApiResponse.ok(crewService.search(SecurityUtil.currentUserId(), name));
     }
 
     /** 크루명 중복확인 */

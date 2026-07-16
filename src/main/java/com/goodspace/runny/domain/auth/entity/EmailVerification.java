@@ -49,6 +49,13 @@ public class EmailVerification {
     @Column(nullable = false)
     private boolean verified;
 
+    // 이 코드에 대한 검증 실패 횟수 (Attempt Limit 판정용 - 10분 창 내 합산)
+    @Column(name = "fail_count", nullable = false)
+    private int failCount;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
     // 비밀번호 재설정용 임시 토큰 (PASSWORD_RESET 검증 성공 시 발급)
     @Column(name = "reset_token", length = 36)
     private String resetToken;
@@ -62,6 +69,13 @@ public class EmailVerification {
         this.type = type;
         this.expiresAt = LocalDateTime.now(ZONE_SEOUL).plusMinutes(expiryMinutes);
         this.verified = false;
+        this.failCount = 0;
+        this.createdAt = LocalDateTime.now(ZONE_SEOUL);
+    }
+
+    /** 검증 실패 횟수 증가 (Attempt Limit) */
+    public void increaseFailCount() {
+        this.failCount++;
     }
 
     /** 코드 만료 여부 */

@@ -63,14 +63,14 @@ public class JwtProvider {
         return Long.parseLong(parseClaims(token).getSubject());
     }
 
-    /** 토큰이 refresh 타입인지 확인 (재발급 API에서 access 토큰 오용 방지) */
-    public boolean isRefreshToken(String token) {
-        return TYPE_REFRESH.equals(parseClaims(token).get(CLAIM_TOKEN_TYPE, String.class));
-    }
-
     /** 토큰이 access 타입인지 확인 (보호 API에서 refresh 토큰 오용 방지) */
     public boolean isAccessToken(String token) {
         return TYPE_ACCESS.equals(parseClaims(token).get(CLAIM_TOKEN_TYPE, String.class));
+    }
+
+    /** 토큰이 refresh 타입인지 확인 (재발급 API에서 access 토큰 오용 방지) */
+    public boolean isRefreshToken(String token) {
+        return TYPE_REFRESH.equals(parseClaims(token).get(CLAIM_TOKEN_TYPE, String.class));
     }
 
     /** 서명 검증 및 클레임 파싱 공통 처리 */

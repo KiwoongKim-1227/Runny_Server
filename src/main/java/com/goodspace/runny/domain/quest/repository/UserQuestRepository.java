@@ -3,6 +3,7 @@ package com.goodspace.runny.domain.quest.repository;
 import com.goodspace.runny.domain.quest.entity.QuestConditionType;
 import com.goodspace.runny.domain.quest.entity.UserQuest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -26,4 +27,10 @@ public interface UserQuestRepository extends JpaRepository<UserQuest, Long> {
                                     @Param("conditionType") QuestConditionType conditionType);
 
     Optional<UserQuest> findByIdAndUserId(Long id, Long userId);
+
+    /** 보상 수령 조건부 처리 - 영향 행 1인 요청만 보상 지급 주체 (더블클릭/동시 요청 중복 지급 차단) */
+    @Modifying
+    @Query("UPDATE UserQuest uq SET uq.claimed = true " +
+            "WHERE uq.id = :id AND uq.userId = :userId AND uq.claimed = false")
+    int claimIfNotClaimed(@Param("id") Long id, @Param("userId") Long userId);
 }

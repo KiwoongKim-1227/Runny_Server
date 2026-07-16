@@ -33,13 +33,9 @@ public final class CrewDto {
     ) {
     }
 
-    /** 검색 응답 - 크루명 부분 일치 + 페이징 */
+    /** 검색 응답 - 크루명 부분 일치, 전체 반환 (MVP 규모에서 페이징 제거) */
     public record SearchResponse(
-            List<SearchItem> content,
-            int page,
-            int size,
-            long totalElements,
-            boolean hasNext
+            List<SearchItem> content
     ) {
     }
 

@@ -26,6 +26,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final SettingService settingService;
+    private final PushNotificationSender pushNotificationSender;
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
 
     /** 친구 요청 수신 알림 생성 - 설정 on인 경우만 (6단계 훅에서 호출) */
@@ -67,7 +68,10 @@ public class NotificationService {
     /** 알림 저장 공통 - payload는 JsonMapper 직렬화. 알림 실패가 본 트랜잭션을 깨지 않도록 예외는 로그만 */
     private void save(Long userId, NotificationType type, Map<String, Object> payload) {
         try {
-            notificationRepository.save(new Notification(userId, type, jsonMapper.writeValueAsString(payload)));
+            Notification notification = notificationRepository
+                    .save(new Notification(userId, type, jsonMapper.writeValueAsString(payload)));
+            // 외부 푸시 발송 지점 (MVP no-op, FCM 연동 시 교체)
+            pushNotificationSender.send(userId, type, toItem(notification).message());
         } catch (Exception e) {
             log.error("알림 생성 실패: user={}, type={}", userId, type, e);
         }

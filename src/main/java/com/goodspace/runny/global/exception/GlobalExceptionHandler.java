@@ -64,6 +64,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.fail(ErrorCode.AUTH_002));
     }
 
+    /** 잘못된 인자 (enum 변환 실패, 도메인 검증용 IllegalArgument 등) - 500 대신 400으로 응답 */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException e) {
+        log.warn("잘못된 요청 인자: {}", e.getMessage());
+        return ResponseEntity.badRequest().body(ApiResponse.fail(ErrorCode.COMMON_001));
+    }
+
     /** 그 외 모든 예외 - 로그 기록 후 일반 메시지로 500 응답 */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {

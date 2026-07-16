@@ -23,9 +23,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByNickname(String nickname);
 
-    /** 닉네임 부분 일치 검색 (본인 제외) - 친구 검색용. 탈퇴 유저는 @SQLRestriction으로 자동 제외 */
-    org.springframework.data.domain.Page<User> findByNicknameContainingAndIdNot(
-            String nickname, Long id, org.springframework.data.domain.Pageable pageable);
+    /** 닉네임 부분 일치 검색 (본인 제외, 전체 반환) - 친구 검색용. 탈퇴 유저는 @SQLRestriction으로 자동 제외 */
+    java.util.List<User> findByNicknameContainingAndIdNotOrderByIdAsc(String nickname, Long id);
 
     /** 코인 조건부 차감 - 잔액이 충분할 때만 성공(영향 행 1), 부족하면 영향 행 0 */
     @Modifying

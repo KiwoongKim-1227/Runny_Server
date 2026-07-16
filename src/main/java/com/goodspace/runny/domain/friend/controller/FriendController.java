@@ -48,14 +48,11 @@ public class FriendController {
 
     /** 친구 검색 */
     @Operation(summary = "친구 검색",
-            description = "닉네임 부분 일치 + 페이징. 각 결과에 관계 상태 포함 - "
+            description = "닉네임 부분 일치, 전체 반환. 각 결과에 관계 상태 포함 - "
                     + "NONE(+ 버튼)/REQUESTED(내가 요청함)/RECEIVED(상대가 요청함)/FRIEND(이미 친구)")
     @GetMapping("/search")
-    public ApiResponse<FriendDto.SearchResponse> search(
-            @RequestParam String nickname,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return ApiResponse.ok(friendService.search(SecurityUtil.currentUserId(), nickname, page, size));
+    public ApiResponse<FriendDto.SearchResponse> search(@RequestParam String nickname) {
+        return ApiResponse.ok(friendService.search(SecurityUtil.currentUserId(), nickname));
     }
 
     /** 친구 요청 보내기 */

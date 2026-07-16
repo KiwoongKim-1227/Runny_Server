@@ -31,6 +31,8 @@ public enum ErrorCode {
     AUTH_012(HttpStatus.UNAUTHORIZED, "AUTH_012", "이메일 또는 비밀번호가 일치하지 않습니다."),
     AUTH_013(HttpStatus.BAD_REQUEST, "AUTH_013", "비밀번호와 비밀번호 확인이 일치하지 않습니다."),
     AUTH_014(HttpStatus.BAD_REQUEST, "AUTH_014", "유효하지 않거나 만료된 재설정 토큰입니다."),
+    AUTH_015(HttpStatus.TOO_MANY_REQUESTS, "AUTH_015", "인증코드 발송 횟수를 초과했습니다. 잠시 후 다시 시도해주세요."),
+    AUTH_016(HttpStatus.TOO_MANY_REQUESTS, "AUTH_016", "인증 시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요."),
 
     // 외부 연동 (EXTERNAL)
     EXTERNAL_001(HttpStatus.BAD_GATEWAY, "EXTERNAL_001", "외부 API 호출에 실패했습니다."),
@@ -82,6 +84,7 @@ public enum ErrorCode {
     PAYMENT_003(HttpStatus.BAD_REQUEST, "PAYMENT_003", "결제 승인에 실패했습니다."),
     PAYMENT_004(HttpStatus.CONFLICT, "PAYMENT_004", "이미 실패 또는 취소 처리된 주문입니다."),
     PAYMENT_005(HttpStatus.NOT_FOUND, "PAYMENT_005", "존재하지 않는 코인 상품입니다."),
+    PAYMENT_006(HttpStatus.CONFLICT, "PAYMENT_006", "결제 처리 중입니다. 잠시 후 다시 확인해주세요."),
 
     // 친구/놀이터 (FRIEND)
     FRIEND_001(HttpStatus.BAD_REQUEST, "FRIEND_001", "자기 자신에게 친구 요청을 보낼 수 없습니다."),
