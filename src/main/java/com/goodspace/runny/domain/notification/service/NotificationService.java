@@ -77,15 +77,28 @@ public class NotificationService {
         }
     }
 
-    /** 표시 메시지 조립 - 타입별로 payload를 해석. 신규 타입 추가 시 여기에 케이스만 추가 */
+    /**
+     * 표시 메시지 조립 - 타입별로 payload를 해석. 신규 타입 추가 시 여기에 케이스만 추가.
+     * payload JSON 파싱 실패 시 기본 메시지로 대체해 손상된 레코드 하나가 전체 목록 조회를 막지 않는다.
+     */
     private NotificationDto.Item toItem(Notification notification) {
-        JsonNode payload = jsonMapper.readTree(notification.getPayload());
-        String message = switch (notification.getType()) {
-            case FRIEND_REQUEST -> payload.path("requesterNickname").asString("알 수 없음")
-                    + "님이 친구 요청을 보냈습니다.";
-            case CREW_APPROVED -> payload.path("crewName").asString("크루")
-                    + " 크루 가입이 승인되었습니다.";
-        };
+        String message;
+        try {
+            JsonNode payload = jsonMapper.readTree(notification.getPayload());
+            message = switch (notification.getType()) {
+                case FRIEND_REQUEST -> payload.path("requesterNickname").asString("알 수 없음")
+                        + "님이 친구 요청을 보냈습니다.";
+                case CREW_APPROVED -> payload.path("crewName").asString("크루")
+                        + " 크루 가입이 승인되었습니다.";
+            };
+        } catch (Exception e) {
+            log.warn("알림 payload 파싱 실패 - 기본 메시지로 대체: id={}, type={}",
+                    notification.getId(), notification.getType(), e);
+            message = switch (notification.getType()) {
+                case FRIEND_REQUEST -> "새로운 친구 요청이 있습니다.";
+                case CREW_APPROVED -> "크루 가입이 승인되었습니다.";
+            };
+        }
         return new NotificationDto.Item(notification.getId(), notification.getType(), message,
                 notification.isRead(), notification.getCreatedAt());
     }

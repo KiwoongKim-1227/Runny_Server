@@ -20,8 +20,11 @@ public interface UserAchievementRepository extends JpaRepository<UserAchievement
 
     boolean existsByUserIdAndAchievementId(Long userId, Long achievementId);
 
-    /** 보상 수령 조건부 처리 - 영향 행 1인 요청만 보상 지급 주체 (동시 요청 중복 지급 차단) */
-    @Modifying
+    /**
+     * 보상 수령 조건부 처리 - 영향 행 1인 요청만 보상 지급 주체 (동시 요청 중복 지급 차단).
+     * clearAutomatically=true로 벌크 UPDATE 후 영속성 컨텍스트를 비워 stale 데이터 방지.
+     */
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE UserAchievement ua SET ua.claimed = true " +
             "WHERE ua.userId = :userId AND ua.achievement.id = :achievementId AND ua.claimed = false")
     int claimIfNotClaimed(@Param("userId") Long userId, @Param("achievementId") Long achievementId);

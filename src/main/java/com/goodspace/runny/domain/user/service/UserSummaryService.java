@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,13 +48,20 @@ public class UserSummaryService {
         }
         List<User> users = userRepository.findAllById(userIds);
 
-        // 활성 강아지 일괄 조회
+        // 유저를 Map으로 변환 (O(n) 조회, 기존 O(n^2) stream().filter() 제거)
+        Map<Long, User> usersById = new HashMap<>();
+        users.forEach(user -> usersById.put(user.getId(), user));
+
+        // 활성 강아지 일괄 조회 (breed JOIN FETCH로 N+1 방지)
         List<Long> activeDogIds = users.stream()
                 .map(User::getActiveDogId)
                 .filter(Objects::nonNull)
                 .toList();
         Map<Long, UserDog> dogsById = new HashMap<>();
-        userDogRepository.findAllById(activeDogIds).forEach(dog -> dogsById.put(dog.getId(), dog));
+        if (!activeDogIds.isEmpty()) {
+            userDogRepository.findAllByIdWithBreed(activeDogIds)
+                    .forEach(dog -> dogsById.put(dog.getId(), dog));
+        }
 
         // 착용 코디 + 아이템 이미지 일괄 조회
         Map<Long, List<DogEquipment>> equipmentsByDogId = new HashMap<>();
@@ -61,7 +69,7 @@ public class UserSummaryService {
                 ? List.of()
                 : dogEquipmentRepository.findByUserDogIdIn(activeDogIds);
         equipments.forEach(equipment ->
-                equipmentsByDogId.computeIfAbsent(equipment.getUserDogId(), k -> new java.util.ArrayList<>())
+                equipmentsByDogId.computeIfAbsent(equipment.getUserDogId(), k -> new ArrayList<>())
                         .add(equipment));
         Map<Long, Item> itemsById = new HashMap<>();
         List<Long> itemIds = equipments.stream().map(DogEquipment::getItemId).distinct().toList();
@@ -69,13 +77,16 @@ public class UserSummaryService {
             itemRepository.findAllById(itemIds).forEach(item -> itemsById.put(item.getId(), item));
         }
 
+        // 입력 순서를 유지하면서 결과 Map 조립
         Map<Long, UserSummary> result = new LinkedHashMap<>();
         for (Long userId : userIds) {
-            users.stream().filter(u -> u.getId().equals(userId)).findFirst().ifPresent(user -> {
-                UserDog dog = user.getActiveDogId() == null ? null : dogsById.get(user.getActiveDogId());
-                result.put(userId, new UserSummary(user.getId(), user.getNickname(), toDogSummary(
-                        dog, equipmentsByDogId.getOrDefault(dog == null ? null : dog.getId(), List.of()), itemsById)));
-            });
+            User user = usersById.get(userId);
+            if (user == null) {
+                continue;
+            }
+            UserDog dog = user.getActiveDogId() == null ? null : dogsById.get(user.getActiveDogId());
+            result.put(userId, new UserSummary(user.getId(), user.getNickname(), toDogSummary(
+                    dog, equipmentsByDogId.getOrDefault(dog == null ? null : dog.getId(), List.of()), itemsById)));
         }
         return result;
     }
@@ -93,6 +104,7 @@ public class UserSummaryService {
                             item == null ? null : item.getImageUrl());
                 })
                 .toList();
+        // breed는 findAllByIdWithBreed로 이미 FETCH 되어 있으므로 추가 쿼리 없음
         return new UserSummary.DogSummary(dog.getId(), dog.getName(), dog.getBreed().getName(),
                 dog.getLevel(), dog.getBreed().getImageUrl(), equippedItems);
     }

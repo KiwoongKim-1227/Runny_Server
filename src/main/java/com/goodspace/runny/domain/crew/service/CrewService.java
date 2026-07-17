@@ -17,6 +17,8 @@ import com.goodspace.runny.global.util.S3Uploader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
@@ -179,7 +181,7 @@ public class CrewService {
 
     /**
      * 회원 탈퇴 훅 (UserService에서 호출) - 크루장이고 크루원이 있으면 위임 필요 에러,
-     * 크루장 혼자면 크루 해체, 일반 크루원이면 멤버십 삭제. 본인 가입 신청도 전부 정리한다.
+     * 크루장 혼자면 크루 해체(S3 로고 삭제 포함), 일반 크루원이면 멤버십 삭제. 본인 가입 신청도 전부 정리한다.
      */
     @Transactional
     public void handleUserWithdrawal(Long userId) {
@@ -190,9 +192,20 @@ public class CrewService {
                     throw new BusinessException(ErrorCode.CREW_010);
                 }
                 // 크루장 혼자인 크루는 해체 후 탈퇴 (임의 설정, 문서 4.A)
+                Crew crew = findCrew(member.getCrewId());
+                String imageUrl = crew.getImageUrl();
                 crewJoinRequestRepository.deleteAllByCrewId(member.getCrewId());
                 crewMemberRepository.delete(member);
                 crewRepository.deleteById(member.getCrewId());
+                // S3 로고 삭제 - 커밋 후 수행 (문서 8.4 삭제 정책)
+                if (imageUrl != null) {
+                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            s3Uploader.delete(imageUrl);
+                        }
+                    });
+                }
             } else {
                 crewMemberRepository.delete(member);
             }
