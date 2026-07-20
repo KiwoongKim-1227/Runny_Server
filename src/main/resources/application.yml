@@ -59,3 +59,7 @@ nicepay:
 
 mail:
   verification-code-expiry-minutes: 5
+
+server:
+  forward-headers-strategy: framework
+  
