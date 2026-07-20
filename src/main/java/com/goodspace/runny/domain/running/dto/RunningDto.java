@@ -62,7 +62,7 @@ public final class RunningDto {
             List<AchievementDto.AchievedItem> achievedAchievements
     ) {
         /** 최소 거리(0.03km) 미달 폐기 응답 - 리포트 미생성 */
-        public static CompleteResponse discarded() {
+        public static CompleteResponse ofDiscarded() {
             return new CompleteResponse(true, false, null, null, List.of(), List.of());
         }
     }

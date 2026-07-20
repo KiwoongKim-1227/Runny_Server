@@ -105,7 +105,7 @@ public class RunningService {
 
         // (2) 최소 거리 미달 -> 저장하지 않고 폐기 응답 (리포트 미생성)
         if (request.distanceKm() < MIN_DISTANCE_KM) {
-            return RunningDto.CompleteResponse.discarded();
+            return RunningDto.CompleteResponse.ofDiscarded();
         }
 
         // (3) 데이터 검증 (음수/미래 시각/비정상 페이스)
