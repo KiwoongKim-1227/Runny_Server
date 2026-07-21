@@ -115,9 +115,26 @@ public class AchievementSeeder implements CommandLineRunner {
         // 랜드마크 시드 (동네 도장 깨기 업적용, 좌표/반경은 운영 시 조정)
         if (landmarkRepository.count() == 0) {
             landmarkRepository.saveAll(List.of(
-                    new Landmark("일산호수공원", 37.6584, 126.7654, 300),
-                    new Landmark("한강공원 반포지구", 37.5100, 126.9958, 300),
-                    new Landmark("올림픽공원", 37.5202, 127.1214, 300)
+                    new Landmark("일산호수공원", 37.6584, 126.7654, 500),
+                    new Landmark("한강공원 반포지구(세빛섬)", 37.5100, 126.9958, 400),
+                    new Landmark("올림픽공원", 37.5202, 127.1214, 500),
+                    new Landmark("롯데월드타워", 37.5126, 127.1025, 300),
+                    new Landmark("석촌호수", 37.5093, 127.1040, 400),
+                    new Landmark("남산서울타워", 37.5512, 126.9882, 300),
+                    new Landmark("경복궁", 37.5796, 126.9770, 400),
+                    new Landmark("광화문광장", 37.5726, 126.9768, 300),
+                    new Landmark("동대문디자인플라자(DDP)", 37.5665, 127.0092, 300),
+                    new Landmark("서울숲", 37.5444, 127.0374, 500),
+                    new Landmark("뚝섬한강공원", 37.5297, 127.0668, 400),
+                    new Landmark("여의도한강공원", 37.5284, 126.9328, 400),
+                    new Landmark("63스퀘어", 37.5198, 126.9401, 300),
+                    new Landmark("국회의사당", 37.5319, 126.9140, 300),
+                    new Landmark("서울월드컵경기장", 37.5683, 126.8972, 300),
+                    new Landmark("하늘공원", 37.5709, 126.8830, 400),
+                    new Landmark("북서울꿈의숲", 37.6207, 127.0414, 500),
+                    new Landmark("어린이대공원", 37.5480, 127.0745, 500),
+                    new Landmark("잠실종합운동장", 37.5152, 127.0736, 400),
+                    new Landmark("코엑스", 37.5115, 127.0595, 300)
             ));
         }
         log.info("업적 마스터 시드 {}종 + 랜드마크 3곳 등록 완료", achievements.size());
