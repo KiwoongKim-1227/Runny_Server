@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 퀘스트 API 컨트롤러. 오늘의 퀘스트 조회, 보상 수령, 꾸미기 이벤트를 제공한다.
+ * 퀘스트 API 컨트롤러. 오늘의 퀘스트 조회, 보상 수령, 꾸미기 진입/완료 이벤트를 제공한다.
  */
-@Tag(name = "Quest", description = "퀘스트 API - 일일 고정/랜덤 + 주간 퀘스트, 수령 버튼 방식 보상")
+@Tag(name = "Quest", description = "퀘스트 API - 일일 고정 3 + 랜덤 2(풀 7) + 주간 랜덤 3(풀 8), 수령 버튼 방식 보상")
 @RestController
 @RequestMapping("/api/quests")
 @RequiredArgsConstructor
@@ -26,8 +26,8 @@ public class QuestController {
 
     /** 오늘의 퀘스트 조회 */
     @Operation(summary = "오늘의 퀘스트 조회",
-            description = "고정 3 + 랜덤 2(daily) + 주간 2(weekly). 진행도/달성(completed)/수령(claimed) 여부 포함. "
-                    + "없으면 조회 시점 lazy 생성(랜덤 2종 + 수치 확정 스냅샷), 조회 시 접속하기 퀘스트 자동 달성")
+            description = "고정 3 + 랜덤 2(daily) + 주간 랜덤 3(weekly). 진행도/달성(completed)/수령(claimed) 여부 포함. "
+                    + "없으면 조회 시점 lazy 생성, 조회 시 접속하기 자동 달성 + 오늘 첫 접속이면 주간 접속 일수 가산")
     @GetMapping("/today")
     public ApiResponse<QuestDto.TodayResponse> getToday() {
         return ApiResponse.ok(questService.getToday(SecurityUtil.currentUserId()));
@@ -44,10 +44,19 @@ public class QuestController {
 
     /** 히스토리 꾸미기 완료 이벤트 */
     @Operation(summary = "히스토리 꾸미기 완료 이벤트",
-            description = "꾸미기 데이터 다운로드 완료 시 프론트가 호출. 랜덤 퀘스트(DECORATE) 진행도 갱신")
+            description = "꾸미기 완료(저장/공유) 시 프론트가 호출. 랜덤 퀘스트(사진 꾸미기) 진행도 + 전담 사진 작가 업적 카운트")
     @PostMapping("/events/decorate")
     public ApiResponse<Void> decorateEvent() {
         questService.onDecorateEvent(SecurityUtil.currentUserId());
+        return ApiResponse.ok();
+    }
+
+    /** 히스토리 꾸미기 창 접속 이벤트 */
+    @Operation(summary = "히스토리 꾸미기 창 접속 이벤트",
+            description = "꾸미기 화면 진입 시 프론트가 호출. 랜덤 퀘스트(꾸미기 창 접속하기) 진행도 갱신")
+    @PostMapping("/events/decorate-enter")
+    public ApiResponse<Void> decorateEnterEvent() {
+        questService.onDecorateEnterEvent(SecurityUtil.currentUserId());
         return ApiResponse.ok();
     }
 }

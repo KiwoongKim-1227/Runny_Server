@@ -33,6 +33,17 @@ public interface RunningRecordRepository extends JpaRepository<RunningRecord, Lo
                           @Param("start") LocalDateTime start,
                           @Param("end") LocalDateTime end);
 
+    /** 누적 러닝 거리 합계 - 누적 거리 단계 업적(벌써 이만큼이나?) 판정용 */
+    @Query("SELECT COALESCE(SUM(r.distanceKm), 0) FROM RunningRecord r WHERE r.userId = :userId")
+    double sumTotalDistance(@Param("userId") Long userId);
+
+    /** 기간 내 러닝 거리 합계 - 지난주 총 거리(주간 퀘스트 target 스냅샷) 계산용 */
+    @Query("SELECT COALESCE(SUM(r.distanceKm), 0) FROM RunningRecord r " +
+            "WHERE r.userId = :userId AND r.endedAt >= :start AND r.endedAt < :end")
+    double sumDistanceBetween(@Param("userId") Long userId,
+                              @Param("start") LocalDateTime start,
+                              @Param("end") LocalDateTime end);
+
     /** 크루 주간 거리 상위 집계 (7단계 CrewWeeklyDistanceProvider 실제 구현용) */
     @Query("SELECT r.userId, SUM(r.distanceKm) FROM RunningRecord r " +
             "WHERE r.userId IN (SELECT m.userId FROM com.goodspace.runny.domain.crew.entity.CrewMember m " +

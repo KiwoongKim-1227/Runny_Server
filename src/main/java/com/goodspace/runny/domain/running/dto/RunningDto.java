@@ -40,7 +40,11 @@ public final class RunningDto {
             String routeLineImageUrl,
             @NotNull LocalDateTime startedAt,
             @NotNull LocalDateTime endedAt,
-            List<Long> visitedLandmarkIds
+            List<Long> visitedLandmarkIds,
+            // 새로운 경로 러닝 여부 - 신규 경로 판정은 프론트 책임 (일일 랜덤 퀘스트 "새로운 경로로 1km 이상 달리기")
+            Boolean newRoute,
+            // 일정한 페이스를 유지한 최장 거리(km) - 프론트 계산 전달 (일일 랜덤 퀘스트 "일정한 페이스로 2km 유지하기")
+            Double steadyPaceKm
     ) {
     }
 
