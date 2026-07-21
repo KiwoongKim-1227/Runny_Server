@@ -28,6 +28,9 @@ public interface UserQuestRepository extends JpaRepository<UserQuest, Long> {
 
     Optional<UserQuest> findByIdAndUserId(Long id, Long userId);
 
+    /** 총 완료 퀘스트 수 - "미션은 이제 쉽다개!" 업적(100개) 판정용 */
+    long countByUserIdAndCompletedTrue(Long userId);
+
     /**
      * 보상 수령 조건부 처리 - 영향 행 1인 요청만 보상 지급 주체 (더블클릭/동시 요청 중복 지급 차단).
      * clearAutomatically=true로 벌크 UPDATE 후 영속성 컨텍스트를 비워 stale 데이터 방지.

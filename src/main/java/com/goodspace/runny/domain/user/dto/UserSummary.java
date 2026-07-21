@@ -14,22 +14,22 @@ public record UserSummary(
         DogSummary dog
 ) {
 
-    /** 활성 강아지 요약 - 외형은 견종 이미지 + 착용 아이템 이미지 목록으로 합성한다(프론트 렌더링) */
+    /** 활성 강아지 요약 - 외형은 견종 3D 모델(glb) + 착용 아이템 모델(glb) 목록으로 합성한다(프론트 렌더링) */
     public record DogSummary(
             Long dogId,
             String name,
             String breedName,
             int level,
-            String breedImageUrl,
+            String breedModelUrl,
             List<EquippedItem> equippedItems
     ) {
     }
 
-    /** 착용 아이템 외형 정보 */
+    /** 착용 아이템 외형 정보 (glb 모델) */
     public record EquippedItem(
             ItemCategory category,
             Long itemId,
-            String imageUrl
+            String modelUrl
     ) {
     }
 }

@@ -24,21 +24,21 @@ public class SettingService {
     private final UserRepository userRepository;
     private final UserDogRepository userDogRepository;
 
-    /** 설정 메인 - 현재 활성 강아지 사진/이름 + 이메일 + provider (비밀번호 변경 메뉴 노출 분기용) */
+    /** 설정 메인 - 현재 활성 강아지 모델(glb)/이름 + 이메일 + provider (비밀번호 변경 메뉴 노출 분기용) */
     @Transactional(readOnly = true)
     public SettingDto.MeResponse getSettingMain(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_003));
         String dogName = null;
-        String dogImageUrl = null;
+        String dogModelUrl = null;
         if (user.getActiveDogId() != null) {
             var dog = userDogRepository.findById(user.getActiveDogId()).orElse(null);
             if (dog != null) {
                 dogName = dog.getName();
-                dogImageUrl = dog.getBreed().getImageUrl();
+                dogModelUrl = dog.getBreed().getModelUrl();
             }
         }
-        return new SettingDto.MeResponse(dogName, dogImageUrl, user.getEmail(), user.getProvider());
+        return new SettingDto.MeResponse(dogName, dogModelUrl, user.getEmail(), user.getProvider());
     }
 
     /** 알림 설정 조회 - 없으면 기본값(전부 on)으로 lazy 생성 */

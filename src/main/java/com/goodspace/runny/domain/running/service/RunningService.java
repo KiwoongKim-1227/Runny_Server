@@ -151,15 +151,18 @@ public class RunningService {
         // (7) 퀘스트 진행도 갱신 - 이번 러닝으로 새로 달성된 퀘스트 요약을 위해 전후 비교
         Set<Long> completedBefore = completedQuestIds(userId);
         questProgressService.onRunningCompleted(userId, new QuestProgressService.RunningEvent(
-                request.distanceKm(), request.durationSec(), request.longestNonstopSec()));
+                request.distanceKm(), request.durationSec(), request.longestNonstopSec(),
+                calories, request.newRoute(), request.steadyPaceKm(), request.endedAt()));
         List<String> newlyCompletedQuests = newlyCompletedTitles(userId, completedBefore);
 
-        // (8) 업적 판정 - 어제 평균 페이스 비교 포함, 새로 달성된 업적 목록 반환
+        // (8) 업적 판정 - 어제 평균 페이스 비교, 누적 거리(이번 러닝 포함), 시작 시각(야간/모닝 순찰) 포함
         Long yesterdayAvgPace = yesterdayAvgPace(userId);
+        double totalDistanceKm = runningRecordRepository.sumTotalDistance(userId);
         List<AchievementDto.AchievedItem> achieved = achievementService.evaluateRunning(userId,
                 new AchievementService.RunningResult(
                         request.distanceKm(), request.durationSec(), request.longestNonstopSec(),
-                        request.avgPaceSec(), yesterdayAvgPace, request.visitedLandmarkIds()));
+                        request.avgPaceSec(), yesterdayAvgPace, totalDistanceKm,
+                        request.startedAt(), request.visitedLandmarkIds()));
 
         // (9) 크루 소속이면 크루 총 누적 거리 가산
         crewMemberRepository.findByUserId(userId).ifPresent(member ->
@@ -221,6 +224,11 @@ public class RunningService {
             throw new BusinessException(ErrorCode.RUNNING_001);
         }
         if (request.splitPaces() != null && request.splitPaces().stream().anyMatch(pace -> pace == null || pace <= 0)) {
+            throw new BusinessException(ErrorCode.RUNNING_001);
+        }
+        // 일정 페이스 유지 거리는 음수/총 거리 초과 불가
+        if (request.steadyPaceKm() != null
+                && (request.steadyPaceKm() < 0 || request.steadyPaceKm() > request.distanceKm())) {
             throw new BusinessException(ErrorCode.RUNNING_001);
         }
         LocalDateTime now = LocalDateTime.now(ZONE_SEOUL).plusSeconds(FUTURE_SKEW_SEC);

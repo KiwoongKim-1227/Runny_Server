@@ -91,7 +91,7 @@ public class UserSummaryService {
         return result;
     }
 
-    /** 강아지 요약 변환 - 견종 이미지 + 착용 아이템 이미지 목록 */
+    /** 강아지 요약 변환 - 견종 3D 모델 + 착용 아이템 모델 목록 */
     private UserSummary.DogSummary toDogSummary(UserDog dog, List<DogEquipment> equipments,
                                                 Map<Long, Item> itemsById) {
         if (dog == null) {
@@ -101,11 +101,11 @@ public class UserSummaryService {
                 .map(equipment -> {
                     Item item = itemsById.get(equipment.getItemId());
                     return new UserSummary.EquippedItem(equipment.getCategory(), equipment.getItemId(),
-                            item == null ? null : item.getImageUrl());
+                            item == null ? null : item.getModelUrl());
                 })
                 .toList();
         // breed는 findAllByIdWithBreed로 이미 FETCH 되어 있으므로 추가 쿼리 없음
         return new UserSummary.DogSummary(dog.getId(), dog.getName(), dog.getBreed().getName(),
-                dog.getLevel(), dog.getBreed().getImageUrl(), equippedItems);
+                dog.getLevel(), dog.getBreed().getModelUrl(), equippedItems);
     }
 }

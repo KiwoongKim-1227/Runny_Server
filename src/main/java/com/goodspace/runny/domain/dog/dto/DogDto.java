@@ -36,7 +36,7 @@ public final class DogDto {
             String description,
             BreedGrade grade,
             int price,
-            String imageUrl,
+            String modelUrl,
             boolean owned,
             boolean achievementLocked,
             boolean unlocked
@@ -45,7 +45,7 @@ public final class DogDto {
         public static BreedResponse of(DogBreed breed, boolean owned, boolean unlocked) {
             return new BreedResponse(
                     breed.getId(), breed.getName(), breed.getDescription(),
-                    breed.getGrade(), breed.getPrice(), breed.getImageUrl(),
+                    breed.getGrade(), breed.getPrice(), breed.getModelUrl(),
                     owned, breed.requiresAchievementUnlock(), unlocked
             );
         }
@@ -56,14 +56,14 @@ public final class DogDto {
             Long dogId,
             String name,
             String breedName,
-            String breedImageUrl,
+            String breedModelUrl,
             int level,
             boolean active
     ) {
         public static MyDogResponse of(UserDog dog, boolean active) {
             return new MyDogResponse(
                     dog.getId(), dog.getName(),
-                    dog.getBreed().getName(), dog.getBreed().getImageUrl(),
+                    dog.getBreed().getName(), dog.getBreed().getModelUrl(),
                     dog.getLevel(), active
             );
         }
@@ -84,7 +84,7 @@ public final class DogDto {
             String name,
             String breedName,
             String breedDescription,
-            String breedImageUrl,
+            String breedModelUrl,
             int level,
             GrowthStage growthStage,
             int exp,
@@ -97,7 +97,7 @@ public final class DogDto {
         public static ProfileResponse of(UserDog dog, DogChangeLogService.ChangeSummary summary) {
             return new ProfileResponse(
                     dog.getId(), dog.getName(),
-                    dog.getBreed().getName(), dog.getBreed().getDescription(), dog.getBreed().getImageUrl(),
+                    dog.getBreed().getName(), dog.getBreed().getDescription(), dog.getBreed().getModelUrl(),
                     dog.getLevel(), dog.growthStage(), dog.getExp(), dog.expToNextLevel(),
                     dog.getStamina(), dog.getEndurance(), dog.getSpeed(),
                     summary

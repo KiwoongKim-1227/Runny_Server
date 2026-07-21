@@ -7,7 +7,6 @@ import com.goodspace.runny.domain.dog.entity.UserDog;
 import com.goodspace.runny.domain.dog.service.DogExpService;
 import com.goodspace.runny.domain.dog.service.DogService;
 import com.goodspace.runny.domain.quest.dto.QuestDto;
-import com.goodspace.runny.domain.quest.entity.QuestConditionType;
 import com.goodspace.runny.domain.quest.entity.QuestType;
 import com.goodspace.runny.domain.quest.entity.UserQuest;
 import com.goodspace.runny.domain.quest.repository.UserQuestRepository;
@@ -20,8 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * 퀘스트 서비스. 오늘의 퀘스트 조회(lazy 출제 + 접속 자동 달성), 보상 수령, 꾸미기 이벤트를 담당한다.
- * 출제는 QuestAssignmentService에 위임하고, 보상 수령은 조건부 UPDATE로 중복 지급을 차단한다.
+ * 퀘스트 서비스. 오늘의 퀘스트 조회(lazy 출제 + 접속 이벤트 처리), 보상 수령, 꾸미기 이벤트를 담당한다.
+ * 출제/진행도는 QuestAssignmentService/QuestProgressService에 위임하고,
+ * 보상 수령은 조건부 UPDATE로 중복 지급을 차단한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,17 +34,12 @@ public class QuestService {
     private final DogExpService dogExpService;
     private final CoinService coinService;
 
-    /** 오늘의 퀘스트 조회 - 없으면 lazy 출제, 조회 시 접속하기 자동 달성 */
+    /** 오늘의 퀘스트 조회 - 없으면 lazy 출제, 조회 시 접속 이벤트(접속하기 달성 + 주간 접속 일수) 처리 */
     @Transactional
     public QuestDto.TodayResponse getToday(Long userId) {
+        questProgressService.onLogin(userId);
         List<UserQuest> daily = questAssignmentService.ensureDailyQuests(userId, QuestPeriod.todayKey());
         List<UserQuest> weekly = questAssignmentService.ensureWeeklyQuests(userId, QuestPeriod.weekKey());
-
-        // 접속하기 퀘스트 자동 달성 (일일 첫 조회 시)
-        daily.stream()
-                .filter(uq -> uq.getQuest().getConditionType() == QuestConditionType.LOGIN)
-                .forEach(UserQuest::completeNow);
-
         return new QuestDto.TodayResponse(
                 daily.stream().map(QuestDto.QuestItem::from).toList(),
                 weekly.stream().map(QuestDto.QuestItem::from).toList());
@@ -90,9 +85,15 @@ public class QuestService {
                 expResult.levelBefore(), expResult.levelAfter(), expResult.leveledUp());
     }
 
-    /** 히스토리 꾸미기 완료 이벤트 - 랜덤 퀘스트(DECORATE) 진행도 갱신 */
+    /** 히스토리 꾸미기 완료 이벤트 - 랜덤 퀘스트(DECORATE) 진행도 + 사진 작가 업적 카운트 */
     @Transactional
     public void onDecorateEvent(Long userId) {
         questProgressService.onDecorated(userId);
+    }
+
+    /** 히스토리 꾸미기 창 접속 이벤트 - 랜덤 퀘스트(DECORATE_ENTER) 진행도 */
+    @Transactional
+    public void onDecorateEnterEvent(Long userId) {
+        questProgressService.onDecorateEntered(userId);
     }
 }

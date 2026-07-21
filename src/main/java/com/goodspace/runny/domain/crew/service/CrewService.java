@@ -43,6 +43,7 @@ public class CrewService {
     private final CrewWeeklyDistanceProvider weeklyDistanceProvider;
     private final UserSummaryService userSummaryService;
     private final S3Uploader s3Uploader;
+    private final CrewNotificationHook crewNotificationHook;
 
     /** 크루명 사용 가능 여부 - 형식/비속어 위반은 예외, 중복이면 false */
     @Transactional(readOnly = true)
@@ -67,6 +68,8 @@ public class CrewService {
             crewMemberRepository.save(new CrewMember(crew.getId(), userId, CrewRole.LEADER));
             // 크루 소속이 되었으므로 다른 크루에 보낸 대기 중 신청은 정리
             crewJoinRequestRepository.deleteAllByUserId(userId);
+            // 크루 생성자도 크루 가입으로 보고 "친구들과 달리기" 업적 판정
+            crewNotificationHook.onCrewCreated(userId);
             return crew.getId();
         } catch (RuntimeException e) {
             if (imageUrl != null) {

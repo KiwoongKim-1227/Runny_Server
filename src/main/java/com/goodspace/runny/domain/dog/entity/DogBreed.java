@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 견종 마스터 엔티티. 일반 8종 + 레어 4종(업적 해금 2, 고가 구매 2)을 시드로 관리한다.
- * 업적 해금형은 unlock_achievement_code로 식별하며, FK(unlock_achievement_id)는 8단계 업적 시드 후 연결한다.
+ * 외형은 3D 모델(glb)로 제공한다. 업적 해금형은 unlock_achievement_code로 식별하며, FK(unlock_achievement_id)는 8단계 업적 시드 후 연결한다.
  */
 @Entity
 @Getter
@@ -50,18 +50,23 @@ public class DogBreed {
     @Column(name = "unlock_achievement_id")
     private Long unlockAchievementId;
 
-    @Column(name = "image_url", nullable = false, length = 500)
-    private String imageUrl;
+    // 견종 3D 모델(glb) URL - id 확정 후 시더가 컨벤션(breed/{id}.glb)으로 할당
+    @Column(name = "model_url", length = 500)
+    private String modelUrl;
 
     @Builder
     private DogBreed(String name, String description, BreedGrade grade, int price,
-                     String unlockAchievementCode, String imageUrl) {
+                     String unlockAchievementCode) {
         this.name = name;
         this.description = description;
         this.grade = grade;
         this.price = price;
         this.unlockAchievementCode = unlockAchievementCode;
-        this.imageUrl = imageUrl;
+    }
+
+    /** 모델 URL 할당 - IDENTITY 전략상 id 확정(insert) 후 시더가 호출 */
+    public void assignModelUrl(String modelUrl) {
+        this.modelUrl = modelUrl;
     }
 
     /** 업적 해금이 필요한 견종 여부 */

@@ -30,12 +30,12 @@ public final class ShopDto {
             ItemCategory category,
             ItemTier tier,
             int price,
-            String imageUrl,
+            String modelUrl,
             boolean owned
     ) {
         public static ShopItemResponse of(Item item, boolean owned) {
             return new ShopItemResponse(item.getId(), item.getName(), item.getCategory(),
-                    item.getTier(), item.getPrice(), item.getImageUrl(), owned);
+                    item.getTier(), item.getPrice(), item.getModelUrl(), owned);
         }
     }
 

@@ -43,7 +43,7 @@ public final class QuestDto {
         }
     }
 
-    /** 오늘의 퀘스트 응답 - 고정 3 + 랜덤 2 + 주간 2 */
+    /** 오늘의 퀘스트 응답 - 고정 3 + 랜덤 2(풀 7) + 주간 랜덤 3(풀 8) */
     public record TodayResponse(
             List<QuestItem> daily,
             List<QuestItem> weekly
