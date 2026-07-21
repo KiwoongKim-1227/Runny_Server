@@ -13,7 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 아이템 마스터 엔티티. 6개 카테고리, 등급별 가격 분포, 이미지는 S3 정적 리소스(item/ 프리픽스).
+ * 아이템 마스터 엔티티. 6개 카테고리, 등급별 가격 분포, 외형은 S3 정적 리소스 3D 모델(glb, item/ 프리픽스).
  */
 @Entity
 @Getter
@@ -39,14 +39,19 @@ public class Item {
     @Column(nullable = false)
     private int price;
 
-    @Column(name = "image_url", nullable = false, length = 500)
-    private String imageUrl;
+    // 아이템 3D 모델(glb) URL - id 확정 후 시더가 컨벤션(item/{id}.glb)으로 할당
+    @Column(name = "model_url", length = 500)
+    private String modelUrl;
 
-    public Item(ItemCategory category, String name, ItemTier tier, int price, String imageUrl) {
+    public Item(ItemCategory category, String name, ItemTier tier, int price) {
         this.category = category;
         this.name = name;
         this.tier = tier;
         this.price = price;
-        this.imageUrl = imageUrl;
+    }
+
+    /** 모델 URL 할당 - IDENTITY 전략상 id 확정(insert) 후 시더가 호출 */
+    public void assignModelUrl(String modelUrl) {
+        this.modelUrl = modelUrl;
     }
 }

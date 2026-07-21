@@ -3,6 +3,7 @@ package com.goodspace.runny.domain.dog.service;
 import com.goodspace.runny.domain.dog.entity.BreedGrade;
 import com.goodspace.runny.domain.dog.entity.DogBreed;
 import com.goodspace.runny.domain.dog.repository.DogBreedRepository;
+import com.goodspace.runny.global.util.StaticAssetUrls;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -14,7 +15,8 @@ import java.util.List;
 
 /**
  * 견종 마스터 시드 데이터 등록기. 최초 기동 시 비어 있으면 12종(일반 8 + 레어 4)을 등록한다.
- * 이미지 URL은 운영자가 S3 breed/ 프리픽스에 업로드한 정적 리소스 경로 규칙을 따른다.
+ * 외형은 3D 모델(glb)이며, 저장 후 id 기반 컨벤션(breed/{id}.glb)으로 model_url을 할당한다.
+ * 모델러는 해당 파일명으로 S3 breed/ 프리픽스에 업로드만 하면 된다(DB 등록 불필요).
  */
 @Slf4j
 @Component
@@ -37,7 +39,7 @@ public class DogBreedSeeder implements CommandLineRunner {
         if (dogBreedRepository.count() > 0) {
             return;
         }
-        dogBreedRepository.saveAll(List.of(
+        List<DogBreed> breeds = dogBreedRepository.saveAll(List.of(
                 // 일반 8종 - 온보딩 무료 선택 1종 / 이후 입양 1,000코인 (MVP 전부 동일가)
                 normal("치와와", "작지만 용감한 세상에서 제일 작은 견종. 작은 몸에 큰 심장을 담고 어디든 함께 달립니다."),
                 normal("시바견", "고집은 세지만 그만큼 매력적인 일본의 국민견. 도도한 표정으로 러닝을 리드합니다."),
@@ -56,7 +58,9 @@ public class DogBreedSeeder implements CommandLineRunner {
                 achievementLocked("그레이하운드", "시속 70km의 지상 최속 스프린터. 스피드 업적을 달성한 러너에게만 곁을 허락합니다.",
                         ACHIEVEMENT_GREYHOUND)
         ));
-        log.info("견종 마스터 시드 12종 등록 완료");
+        // id 확정 후 모델 URL 할당 (breed/{id}.glb 컨벤션)
+        breeds.forEach(breed -> breed.assignModelUrl(StaticAssetUrls.breedModel(breed.getId())));
+        log.info("견종 마스터 시드 {}종 등록 완료 (glb 모델 URL 자동 할당)", breeds.size());
     }
 
     /** 일반 견종 생성 헬퍼 */
@@ -64,7 +68,6 @@ public class DogBreedSeeder implements CommandLineRunner {
         return DogBreed.builder()
                 .name(name).description(description)
                 .grade(BreedGrade.NORMAL).price(NORMAL_PRICE)
-                .imageUrl(imageUrl(name))
                 .build();
     }
 
@@ -73,7 +76,6 @@ public class DogBreedSeeder implements CommandLineRunner {
         return DogBreed.builder()
                 .name(name).description(description)
                 .grade(BreedGrade.RARE).price(PREMIUM_PRICE)
-                .imageUrl(imageUrl(name))
                 .build();
     }
 
@@ -83,12 +85,6 @@ public class DogBreedSeeder implements CommandLineRunner {
                 .name(name).description(description)
                 .grade(BreedGrade.RARE).price(0)
                 .unlockAchievementCode(achievementCode)
-                .imageUrl(imageUrl(name))
                 .build();
-    }
-
-    /** S3 정적 리소스 경로 규칙 (운영자 업로드, 8.4 breed/ 프리픽스) */
-    private String imageUrl(String name) {
-        return "https://runny-assets.s3.ap-northeast-2.amazonaws.com/breed/" + name + ".png";
     }
 }

@@ -24,11 +24,11 @@ public final class DressroomDto {
             ItemCategory category,
             ItemTier tier,
             int price,
-            String imageUrl
+            String modelUrl
     ) {
         public static ItemSummary from(Item item) {
             return new ItemSummary(item.getId(), item.getName(), item.getCategory(),
-                    item.getTier(), item.getPrice(), item.getImageUrl());
+                    item.getTier(), item.getPrice(), item.getModelUrl());
         }
     }
 

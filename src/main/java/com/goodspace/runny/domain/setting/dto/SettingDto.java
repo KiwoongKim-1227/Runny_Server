@@ -13,7 +13,7 @@ public final class SettingDto {
     /** 설정 메인 응답 - provider로 비밀번호 변경 메뉴 노출 여부를 프론트가 분기 (EMAIL일 때만 노출) */
     public record MeResponse(
             String dogName,
-            String dogImageUrl,
+            String dogModelUrl,
             String email,
             Provider provider
     ) {

@@ -4,6 +4,7 @@ import com.goodspace.runny.domain.item.entity.Item;
 import com.goodspace.runny.domain.item.entity.ItemCategory;
 import com.goodspace.runny.domain.item.entity.ItemTier;
 import com.goodspace.runny.domain.item.repository.ItemRepository;
+import com.goodspace.runny.global.util.StaticAssetUrls;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -18,6 +19,8 @@ import java.util.List;
  * 아이템 마스터 시드 데이터 등록기. 기획 확정 가격표(2026-07)를 그대로 등록한다.
  * 가격은 등급 단일가가 아닌 분포형: 저렴 ~199 / 중간 200~499 / 고급 500 이상 범위 내 개별 가격.
  * 특수효과는 문서 원문 "(5)" 표기이나 나열 항목 4개, 추후 1종 추가 예정이라 4개만 등록. 총 71종.
+ * 외형은 3D 모델(glb)이며, 저장 후 id 기반 컨벤션(item/{id}.glb)으로 model_url을 할당한다.
+ * 모델러는 해당 파일명으로 S3 item/ 프리픽스에 업로드만 하면 된다(DB 등록 불필요).
  */
 @Slf4j
 @Component
@@ -117,28 +120,24 @@ public class ItemSeeder implements CommandLineRunner {
         premium(items, ItemCategory.EFFECT, "불꽃 발자국 이펙트", 1200);
         premium(items, ItemCategory.EFFECT, "하트 뿅뿅 이펙트", 1500);
 
-        itemRepository.saveAll(items);
-        log.info("아이템 마스터 시드 {}종 등록 완료", items.size());
+        List<Item> saved = itemRepository.saveAll(items);
+        // id 확정 후 모델 URL 할당 (item/{id}.glb 컨벤션)
+        saved.forEach(item -> item.assignModelUrl(StaticAssetUrls.itemModel(item.getId())));
+        log.info("아이템 마스터 시드 {}종 등록 완료 (glb 모델 URL 자동 할당)", saved.size());
     }
 
     /** 저렴 등급 (~199) 아이템 추가 헬퍼 */
     private void cheap(List<Item> items, ItemCategory category, String name, int price) {
-        items.add(new Item(category, name, ItemTier.CHEAP, price, imageUrl(category, name)));
+        items.add(new Item(category, name, ItemTier.CHEAP, price));
     }
 
     /** 중간 등급 (200~499) 아이템 추가 헬퍼 */
     private void mid(List<Item> items, ItemCategory category, String name, int price) {
-        items.add(new Item(category, name, ItemTier.MID, price, imageUrl(category, name)));
+        items.add(new Item(category, name, ItemTier.MID, price));
     }
 
     /** 고급 등급 (500 이상) 아이템 추가 헬퍼 */
     private void premium(List<Item> items, ItemCategory category, String name, int price) {
-        items.add(new Item(category, name, ItemTier.PREMIUM, price, imageUrl(category, name)));
-    }
-
-    /** S3 정적 리소스 경로 규칙 (운영자 업로드, 8.4 item/ 프리픽스) */
-    private String imageUrl(ItemCategory category, String name) {
-        return "https://runny-assets.s3.ap-northeast-2.amazonaws.com/item/"
-                + category.name().toLowerCase() + "/" + name + ".png";
+        items.add(new Item(category, name, ItemTier.PREMIUM, price));
     }
 }
